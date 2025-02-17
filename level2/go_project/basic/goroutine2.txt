@@ -1,0 +1,27 @@
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func say(s string) {
+    for i := 0; i < 5; i++ {
+        time.Sleep(100 * time.Millisecond)
+        fmt.Println(s)
+    }
+}
+
+// 多线程 debug程序不会打印东西  
+// 使用命令行才行 go run main.go
+func main() {
+    go func() {
+        fmt.Println("run goroutine in closure")
+    }()
+    go func(s string) {
+		 fmt.Println(s)
+    }("gorouine: closure params")
+
+    go say("in goroutine: world")
+    say("hello")
+}

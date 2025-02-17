@@ -1,0 +1,23 @@
+package basic
+
+import "fmt"
+
+// 切片其实用的是数组的内存映射，改了都会一起改
+func init() {
+	a := [5]int{6, 5, 4, 3, 2}
+	// 从数组下标2开始，直到数组的最后一个元素
+	s7 := a[2:]
+	// 从数组下标1开始，直到数组下标3的元素，创建一个新的切片
+	s8 := a[1:3]
+	// 从0到下标2的元素，创建一个新的切片
+	s9 := a[:2]
+	fmt.Println(s7)
+	fmt.Println(s8)
+	fmt.Println(s9)
+	a[0] = 9
+	a[1] = 8
+	a[2] = 7
+	fmt.Println(s7)
+	fmt.Println(s8)
+	fmt.Println(s9)
+}

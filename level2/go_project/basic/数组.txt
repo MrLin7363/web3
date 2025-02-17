@@ -1,0 +1,16 @@
+package basic
+
+import "fmt"
+
+func init() {
+	var a [3]int
+	fmt.Println("a = ", a)
+
+	// 声明以及初始化
+	var b [5]int = [5]int{1, 2, 3, 4, 5}
+	fmt.Println("b = ", b)
+
+	// :=类型推导
+	d := [3]int{3, 2, 1}
+	fmt.Println("d = ", d)
+}
