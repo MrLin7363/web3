@@ -1,0 +1,41 @@
+package main
+
+import (
+	"crypto/ecdsa"
+	"fmt"
+	"log"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+	"golang.org/x/crypto/sha3"
+)
+
+// 没有测试币的也部署不了合约
+func main() {
+	privateKey, err := crypto.GenerateKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 输出私钥地址
+	privateKeyBytes := crypto.FromECDSA(privateKey)
+	fmt.Println(hexutil.Encode(privateKeyBytes)[2:]) // 4843b996418687730a1d2b1bb2d039df6e5385a606ff9a35db67323878346665
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+
+	// 输出公钥地址
+	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
+	fmt.Println(hexutil.Encode(publicKeyBytes)[4:]) // 0beb30696a363a43ce761a5a63a05478146c8ed9c5acc6e98bbc4e8d2bcbd10686c3f73c9f6598ef638d2de41cc582a27827d7f73d6543926732c429dc0a94be
+
+	// 输出钱包地址
+	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
+	fmt.Println(address) // 0x48A491393E04e77AbaeCa94Ef42C991e4Fc02475
+
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write(publicKeyBytes[1:])
+	fmt.Println(hexutil.Encode(hash.Sum(nil)[12:])) // 0x48a491393e04e77abaeca94ef42c991e4fc02475
+}

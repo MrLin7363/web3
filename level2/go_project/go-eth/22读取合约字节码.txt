@@ -1,0 +1,28 @@
+package main
+
+import (
+	"context"
+	"encoding/hex"
+	"fmt"
+	"log"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	client, err := ethclient.Dial("https://sepolia.infura.io/v3/5e8e4dda12b048d087bbddc2b9b495e4")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	contractAddress := common.HexToAddress("0x734A65E7990409baFef3C5b7950b5d2ebF0674b1")
+	bytecode, err := client.CodeAt(context.Background(), contractAddress, nil) // nil is latest block
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 就是Strore.bin文件内容
+	fmt.Println(hex.EncodeToString(bytecode)) // 60806...10029
+}

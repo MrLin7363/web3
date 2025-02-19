@@ -1,0 +1,75 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"go_project/store"
+	"log"
+	"strings"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+var key = "0x0000000000000000000000000000000000000000000000000000000000003000" //66长度，不算0x就是64长度，是byte[]32 的输入
+var value = "0x0000000000000000000000000000000000000000000000000000000000003333"
+
+func main() {
+	client, err := ethclient.Dial("wss://sepolia.infura.io/ws/v3/5e8e4dda12b048d087bbddc2b9b495e4")
+	if err != nil {
+		log.Fatal(err)
+	}
+	contractAddress := common.HexToAddress("0x7540292710250db452e9A14416bEf2657c0bb0D5")
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{contractAddress},
+	}
+
+	logs := make(chan types.Log)
+	sub, err := client.SubscribeFilterLogs(context.Background(), query, logs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(string(store.StoreABI)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+    ItemSetSig := []byte("ItemSet(bytes32,bytes32)")
+	ItemSetSigHash := crypto.Keccak256Hash(ItemSetSig)
+	fmt.Println(ItemSetSigHash) // 0xe79e73da417710ae99aa2088575580a60415d359acfad9cdd3382d59c80281d4
+
+	for {
+		select {
+		case err := <-sub.Err():
+			log.Fatal(err)
+		case vLog := <-logs:
+			fmt.Println(vLog) // pointer to event log
+			fmt.Println(vLog.BlockHash.Hex())
+			fmt.Println(vLog.BlockNumber)
+			fmt.Println(vLog.TxHash.Hex())
+			event := struct {
+				Key   [32]byte
+				Value [32]byte
+			}{}
+			err := contractAbi.UnpackIntoInterface(&event, "ItemSet", vLog.Data)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println(string(event.Key[:]))   // foo
+			fmt.Println(string(event.Value[:])) // bar
+
+			var topics [4]string
+			for i := range vLog.Topics {
+				topics[i] = vLog.Topics[i].Hex()
+				fmt.Println("topic[" + string(i) + "]" + topics[i]) // 0xe79e73da417710ae99aa2088575580a60415d359acfad9cdd3382d59c80281d4
+			}
+			// 第0个topic是event的签名，第1个topic是第一个indexed修饰的参数， 第2个topic事第二个indexed修饰的参数
+			fmt.Println(topics[0]) // 0xe79e73da417710ae99aa2088575580a60415d359acfad9cdd3382d59c80281d4
+		}
+	}
+}

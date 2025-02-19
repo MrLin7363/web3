@@ -29,14 +29,14 @@ https://marketplace.visualstudio.com/items?itemName=sourcegraph.cody-ai
 配置系统变量
 
 ```
-GOPATH    第一个用于放 Go 语言的第三方包，第二个用于放自己的开发代码
-G:\software\go1.24\library;G:\software\go1.24\workplace
+GOPATH    放 Go 语言的第三方包  go get用到
+G:\software\go1.24\library;
 
 GOROOT
 G:\software\go1.24\go
 
 PATH
-%GOROOT%\bin
+%GOPATH%\bin
 ```
 
 配置代理
@@ -53,11 +53,7 @@ go env -w GOSUMDB=off
 
 #查看环境变量
 go env
-————————————————
 
-                            版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
-                        
-原文链接：https://blog.csdn.net/qq_46027425/article/details/139924867
 ```
 
 vscode 添加lanuch.file
@@ -112,6 +108,16 @@ Error loading workspace: packages.Load error: err: exit status 1: stderr: go: ca
 一个go程序只能有一个main函数
 
 main函数作为启动函数的入口
+
+### 1.3 go get
+
+```
+如果你不设置 GOPATH 环境变量，Go 1.11+ 版本会使用 Go Modules 来管理依赖。在这种情况下，包将被下载到你的项目目录中，而不是 GOPATH。
+
+go get：包将被下载到项目目录的 pkg/mod 子目录。可执行文件不会被创建，因为 go get 主要用于获取包，而不是构建可执行文件。
+
+go install：当使用 go install 时，Go 1.11+ 版本会构建可执行文件并将其安装到项目目录中的 bin 子目录。这个 bin 子目录会在项目目录下创建，而不是在 GOPATH 中。
+```
 
 
 
@@ -1316,6 +1322,14 @@ func custom() {
 }
 ```
 
+### 14.1匿名函数 
+
+```
+
+```
+
+
+
 ## 15. 闭包
 
 ```
@@ -1396,27 +1410,19 @@ func main() {
 
 
 
+## 17. go get命令
+
+go get 命令会下载指定的包，并将其添加到当前模块的依赖中。如果本地尚未存在该包，它将会被下载并安装到 $GOPATH/pkg/mod 目录中。
 
 
 
+如果没有使用 Go Modules（即没有 go.mod 文件），Go 会默认依赖于旧的 GOPATH 模式。在这种模式下，Go 会尝试在 $GOPATH/src 目录下查找依赖包。如果依赖包没有在 $GOPATH 中找到，它会去 $GOROOT 中查找标准库和依赖。   所以，建议使用 Go Modules    
+
+go mod init project_name
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+如果刚导入包ge get 包还是显示没引入，可以重启idea或者关闭软件，切换VPN试试等
 
 # 二、Gin框架
 
@@ -1462,3 +1468,596 @@ r := gin.Default()
 ```
 
 访问   http://localhost:8080/
+
+# 三、go-ethereum
+
+## 1. 安装
+
+```
+go get -u github.com/ethereum/go-ethereum
+// 如果显示还有未安装，执行以下
+go get github.com/ethereum/go-ethereum/rpc@v1.15.2
+```
+
+
+
+## 2. Ganache
+
+Ganache(正式名称为 testrpc)是一个用 Node.js 编写的以太坊实现，用于在本地开发去中心化应用程序时进行测试。现在我们将带着您完成安装并连接到它。
+
+也是启动本地客户端，有一些 私钥和账户
+
+首先通过NPM安装 ganache。
+
+```
+npm install -g ganache-cli
+```
+
+运行 ganache cli 客户端。
+
+```
+ganache-cli
+```
+
+现在连到 `http://localhost:8584` 上的 ganache RPC 主机。
+
+```
+client, err := ethclient.Dial("http://localhost:8545")
+if err != nil {
+  log.Fatal(err)
+}
+```
+
+在启动 ganache 时，您还可以使用相同的助记词来生成相同序列的公开地址。
+
+```
+ganache-cli -m "much repair shock carbon improve miss forget sock include bullet interest solution"
+```
+
+
+
+## 3. 连接网络客户端
+
+主网
+
+```
+	// 连接到特定网络的客户端，入参是网络的RPC节点（能连接网络）
+	client, err := ethclient.Dial("https://cloudflare-eth.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+```
+
+自己申请的sepolia测试网RPC
+
+```
+https://sepolia.infura.io/v3/5e8e4dda12b048d087bbddc2b9b495e4
+```
+
+## 4. 查询交易
+
+```
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	client, err := ethclient.Dial("https://sepolia.infura.io/v3/5e8e4dda12b048d087bbddc2b9b495e4")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 直接获取某个交易的信息，根据事务哈希
+	txHash := common.HexToHash("0xd891f47bb6148970a11b593d5e4d03b28f457021f19fb025b5fdf17d7f31b371")
+	tx, isPending, err := client.TransactionByHash(context.Background(), txHash)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(tx.Hash().Hex()) // 0xd891f47bb6148970a11b593d5e4d03b28f457021f19fb025b5fdf17d7f31b371
+	fmt.Println(isPending)       // false
+}
+
+```
+
+## 5. 查询区块
+
+```
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	client, err := ethclient.Dial("https://cloudflare-eth.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 返回最新的区块头
+	header, err := client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(header.Number.String()) // 5671744
+
+	blockNumber := big.NewInt(5671744)
+	block, err := client.BlockByNumber(context.Background(), blockNumber)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 区块号，区块时间戳，区块摘要，区块难度以及交易列表
+	fmt.Println(block.Number().Uint64())     // 5671744
+	fmt.Println(block.Time())                // 1527211625
+	fmt.Println(block.Difficulty().Uint64()) // 3217000136609065
+	fmt.Println(block.Hash().Hex())          // 0x9e8751ebb5069389b855bba72d94902cc385042661498a415979b7b6ee9ba4b9
+	fmt.Println(len(block.Transactions()))   // 144
+
+	count, err := client.TransactionCount(context.Background(), block.Hash())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(count) // 144
+}
+
+```
+
+## 6. 转账以太币
+
+```
+package main
+
+import (
+	"context"
+	"crypto/ecdsa"
+	"fmt"
+	"log"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	client, err := ethclient.Dial("https://sepolia.infura.io/v3/xxxxx")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 我的钱包私钥
+	privateKey, err := crypto.HexToECDSA("xxxxx")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+
+	// 根据公钥获取到我的钱包地址
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// 将地址转换为metamask显示的那个地址
+	fmt.Println(fromAddress.Hex())
+
+	value := big.NewInt(1000000000000000) // in wei (0.0001 eth)
+	gasLimit := uint64(21000)             // in units
+	// Transaction Fee:   0.00011927104434 ETH   =  21000 *  Gwei (0.00000000567957354 ETH)
+	// 交易花费 = gasLimit*gasPrice
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 发送的地址
+	toAddress := common.HexToAddress("0x4592d8f8d7b001e72cb26a73e4fa1806a51ac79d")
+	var data []byte
+	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
+
+	chainID, err := client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+    // 发送人的私钥进行签名
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+    // 发送交易
+	err = client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 交易哈希 https://sepolia.etherscan.io/tx/0x2d81d4500db3be6671f6c9ba4a18b4d2bc07c9285ab20e1f99098f4f15002593
+	fmt.Printf("tx sent: %s", signedTx.Hash().Hex())
+}
+
+```
+
+## 7. 订阅新区块
+
+```
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	// 需要一个支持 websocket RPC 的以太坊服务提供者
+	client, err := ethclient.Dial("wss://sepolia.infura.io/ws/v3/5e8e4dda12b048d087bbddc2b9b495e4")
+	// 这里不能用sepolia
+	// client, err := ethclient.Dial("https://sepolia.infura.io/v3/xxxxx")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	headers := make(chan *types.Header)
+	sub, err := client.SubscribeNewHead(context.Background(), headers)
+	// 报错  notifications not supported
+	if err != nil {
+		fmt.Print(err)
+		log.Fatal(err)
+	}
+
+	for {
+		select {
+		case err := <-sub.Err():
+			fmt.Print("error")
+
+			log.Fatal(err)
+		case header := <-headers:
+			fmt.Println(header.Hash().Hex()) // 0xbc10defa8dda384c96a17640d84de5578804945d347072e091b4e5f390ddea7f
+
+			block, err := client.BlockByHash(context.Background(), header.Hash())
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println(block.Hash().Hex())        // 0xbc10defa8dda384c96a17640d84de5578804945d347072e091b4e5f390ddea7f
+			fmt.Println(block.Number().Uint64())   // 3477413
+			fmt.Println(block.Time())              // 1529525947
+			fmt.Println(block.Nonce())             // 130524141876765836
+			fmt.Println(len(block.Transactions())) // 7
+		}
+	}
+}
+
+```
+
+## 8. 部署合约-重要
+
+### 8.1 安装 Solidity 编译器 (`solc`).
+
+```
+npm install -g solc
+
+go install github.com/ethereum/go-ethereum/cmd/abigen@latest
+```
+
+### 8.2 安装aibgen工具
+
+```
+go get -u github.com/ethereum/go-ethereum
+// 进入包的安装目录 GOPATH 中的 pkg/mod 目录
+cd G:/software/go1.24/library/pkg/mod/github.com/ethereum/go-ethereum@v1.15.2
+make // linux才有的指令，windows要另外安装,这里可能安装一些安装不上，不管
+make devtools
+```
+
+### 8.3 安装make 
+
+安装Make
+
+常规的做法，大家都是使用安装MinGW包的方法来安装Make，但是这很繁琐，我并不推荐，我推荐使用[Choco](https://chocolatey.org/)和[Scoop](https://scoop.sh/)来安装管理Make。
+
+Choco
+
+PowerShell安装Choco：
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+```
+
+**管理员权限**启动PowerShell,搜索然后右键，然后运行以下命令进行安装：
+
+```powershell
+choco install make
+```
+
+
+
+### 8.4 执行部署
+
+```
+solcjs --abi Store.sol
+solcjs --bin Store.sol
+abigen --abi=Store_sol_Store.abi --pkg=store --out=store.go // 注意不能大写String要保持名字一直，否则没有Deply方法
+
+```
+
+```
+pragma solidity ^0.8.26;
+
+contract Store {
+  event ItemSet(bytes32 key, bytes32 value);
+
+  string public version;
+  mapping (bytes32 => bytes32) public items;
+
+  constructor(string memory _version) {
+    version = _version;
+  }
+
+  function setItem(bytes32 key, bytes32 value) external {
+    items[key] = value;
+    emit ItemSet(key, value);
+  }
+}
+```
+
+
+
+```
+package main
+
+import (
+	"context"
+	"crypto/ecdsa"
+	"fmt"
+	"go_project/store"
+	"log"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	client, err := ethclient.Dial("https://sepolia.infura.io/v3/5e8e4dda12b048d087bbddc2b9b495e4")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	privateKey, err := crypto.HexToECDSA("xxxxxx")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress) // 生成的新钱包是nonce 0 ，没测试币也部署不了，所以用自己地址
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gasPrice, err := client.SuggestGasPrice(context.Background()) // 633570824 = 0x25c38608
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	chainID, err := client.NetworkID(context.Background()) // 11155111
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)     // in wei 往合约充值eth
+	auth.GasLimit = uint64(300000) // gas单位限制
+	auth.GasPrice = gasPrice       // 每gas的价格
+
+	input := "1.0"
+	address, tx, instance, err := store.DeployStore(auth, client, input)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(address.Hex())   // 合约地址 0xEfa302fE4e259e239b1Dc8bA20D591a512d63E7A  合约得等部署完后才查的到
+	fmt.Println(tx.Hash().Hex()) // 交易哈希 0x72a53416253a561a69c238ea2d1fb68df1c7220829352dbd6abafd1e364f1247
+	// https://sepolia.etherscan.io/tx/0x72a53416253a561a69c238ea2d1fb68df1c7220829352dbd6abafd1e364f1247 执行成功交易地址
+
+	_ = instance
+}
+
+```
+
+```
+package main
+
+import (
+	"context"
+	"crypto/ecdsa"
+	"encoding/hex"
+	"fmt"
+	"log"
+	"math/big"
+	"time"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+// 使用合约字节码发送交易
+func main() {
+	// store.sol的bin字节码
+	contractByteCode := "608060405234801561000f575f5ffd5b5060405161087838038061087883398181016040528101906100319190610193565b805f908161003f91906103ea565b50506104b9565b5f604051905090565b5f5ffd5b5f5ffd5b5f5ffd5b5f5ffd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b6100a58261005f565b810181811067ffffffffffffffff821117156100c4576100c361006f565b5b80604052505050565b5f6100d6610046565b90506100e2828261009c565b919050565b5f67ffffffffffffffff8211156101015761010061006f565b5b61010a8261005f565b9050602081019050919050565b8281835e5f83830152505050565b5f610137610132846100e7565b6100cd565b9050828152602081018484840111156101535761015261005b565b5b61015e848285610117565b509392505050565b5f82601f83011261017a57610179610057565b5b815161018a848260208601610125565b91505092915050565b5f602082840312156101a8576101a761004f565b5b5f82015167ffffffffffffffff8111156101c5576101c4610053565b5b6101d184828501610166565b91505092915050565b5f81519050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f600282049050600182168061022857607f821691505b60208210810361023b5761023a6101e4565b5b50919050565b5f819050815f5260205f209050919050565b5f6020601f8301049050919050565b5f82821b905092915050565b5f6008830261029d7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82610262565b6102a78683610262565b95508019841693508086168417925050509392505050565b5f819050919050565b5f819050919050565b5f6102eb6102e66102e1846102bf565b6102c8565b6102bf565b9050919050565b5f819050919050565b610304836102d1565b610318610310826102f2565b84845461026e565b825550505050565b5f5f905090565b61032f610320565b61033a8184846102fb565b505050565b5b8181101561035d576103525f82610327565b600181019050610340565b5050565b601f8211156103a25761037381610241565b61037c84610253565b8101602085101561038b578190505b61039f61039785610253565b83018261033f565b50505b505050565b5f82821c905092915050565b5f6103c25f19846008026103a7565b1980831691505092915050565b5f6103da83836103b3565b9150826002028217905092915050565b6103f3826101da565b67ffffffffffffffff81111561040c5761040b61006f565b5b6104168254610211565b610421828285610361565b5f60209050601f831160018114610452575f8415610440578287015190505b61044a85826103cf565b8655506104b1565b601f19841661046086610241565b5f5b8281101561048757848901518255600182019150602085019450602081019050610462565b868310156104a457848901516104a0601f8916826103b3565b8355505b6001600288020188555050505b505050505050565b6103b2806104c65f395ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c806348f343f31461004357806354fd4d5014610073578063f56256c714610091575b5f5ffd5b61005d600480360381019061005891906101d7565b6100ad565b60405161006a9190610211565b60405180910390f35b61007b6100c2565b604051610088919061029a565b60405180910390f35b6100ab60048036038101906100a691906102ba565b61014d565b005b6001602052805f5260405f205f915090505481565b5f80546100ce90610325565b80601f01602080910402602001604051908101604052809291908181526020018280546100fa90610325565b80156101455780601f1061011c57610100808354040283529160200191610145565b820191905f5260205f20905b81548152906001019060200180831161012857829003601f168201915b505050505081565b8060015f8481526020019081526020015f20819055507fe79e73da417710ae99aa2088575580a60415d359acfad9cdd3382d59c80281d48282604051610194929190610355565b60405180910390a15050565b5f5ffd5b5f819050919050565b6101b6816101a4565b81146101c0575f5ffd5b50565b5f813590506101d1816101ad565b92915050565b5f602082840312156101ec576101eb6101a0565b5b5f6101f9848285016101c3565b91505092915050565b61020b816101a4565b82525050565b5f6020820190506102245f830184610202565b92915050565b5f81519050919050565b5f82825260208201905092915050565b8281835e5f83830152505050565b5f601f19601f8301169050919050565b5f61026c8261022a565b6102768185610234565b9350610286818560208601610244565b61028f81610252565b840191505092915050565b5f6020820190508181035f8301526102b28184610262565b905092915050565b5f5f604083850312156102d0576102cf6101a0565b5b5f6102dd858286016101c3565b92505060206102ee858286016101c3565b9150509250929050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52602260045260245ffd5b5f600282049050600182168061033c57607f821691505b60208210810361034f5761034e6102f8565b5b50919050565b5f6040820190506103685f830185610202565b6103756020830184610202565b939250505056fea26469706673582212208b5011b1b0a3b051c7f6ffa11e9ed97ba9956bc6c1787208f306b809b8b915df64736f6c634300081c0033"
+
+	client, err := ethclient.Dial("https://sepolia.infura.io/v3/5e8e4dda12b048d087bbddc2b9b495e4")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	privateKey, err := crypto.HexToECDSA("xxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	value := big.NewInt(100000000000000) // in wei (0.0001 eth)
+	gasLimit := uint64(86312)            // in units
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 这里的data可以解码合约代码,这是abigen生成的 bin文件，也可以代码生成
+	data, err := hex.DecodeString(contractByteCode)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 创建交易
+	tx := types.NewContractCreation(nonce, value, gasLimit, gasPrice, data)
+
+	chainID, err := client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 交易签名
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 发送交易
+	err = client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 交易哈希 https://sepolia.etherscan.io/tx/0xfeaca2f7beb173fde879d116007e058b17fd5b9138d695b971a802f9fb177d74
+	fmt.Printf("tx sent: %s", signedTx.Hash().Hex())
+
+	receipt, err := waitForReceipt(client, signedTx.Hash())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Contract Deployed at address: ", receipt.ContractAddress.Hex()) // 0x4827b6DD92b500a6d3C208F7d0B6997ccC4A9add
+}
+
+func waitForReceipt(client *ethclient.Client, txHash common.Hash) (*types.Receipt, error) {
+	for {
+		receipt, err := client.TransactionReceipt(context.Background(), txHash)
+		if err == nil {
+			return receipt, nil
+		}
+		if err != ethereum.NotFound {
+			return nil, err
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+```
+
+
+
+## 9. remix部署加载
+
+也可以编译成 abi  json和 bin字节码
+
+也可以部署，加载
+
+## 10. 加载查询合约
+
+在区块链浏览器输入自己钱包地址，然后找到合约创建的交易就可以看到合约地址了
+
+```
+package main
+
+import (
+	"fmt"
+	"go_project/store"
+	"log"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	client, err := ethclient.Dial("https://sepolia.infura.io/v3/5e8e4dda12b048d087bbddc2b9b495e4")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 合约地址
+	address := common.HexToAddress("0x734A65E7990409baFef3C5b7950b5d2ebF0674b1")
+	// 生成合约实例
+	instance, err := store.NewStore(address, client)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("contract is loaded")
+
+	// 查询合约
+	version, err := instance.Version(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(version) // "1.0"
+}
+
+```
+
+
+

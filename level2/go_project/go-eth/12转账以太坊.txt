@@ -1,0 +1,75 @@
+package main
+
+import (
+	"context"
+	"crypto/ecdsa"
+	"fmt"
+	"log"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	client, err := ethclient.Dial("https://sepolia.infura.io/v3/xxxxx")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 我的钱包私钥
+	privateKey, err := crypto.HexToECDSA("xxxxx")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+
+	// 根据公钥获取到我的钱包地址
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// 将地址转换为metamask显示的那个地址
+	fmt.Println(fromAddress.Hex())
+
+	value := big.NewInt(1000000000000000) // in wei (0.0001 eth)
+	gasLimit := uint64(21000)             // in units
+	// Transaction Fee:   0.00011927104434 ETH   =  21000 *  Gwei (0.00000000567957354 ETH)
+	// 交易花费 = gasLimit*gasPrice
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 发送的地址
+	toAddress := common.HexToAddress("0x4592d8f8d7b001e72cb26a73e4fa1806a51ac79d")
+	var data []byte
+	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
+
+	chainID, err := client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+    // 发送人的私钥进行签名
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+    // 发送交易
+	err = client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 交易哈希 https://sepolia.etherscan.io/tx/0x2d81d4500db3be6671f6c9ba4a18b4d2bc07c9285ab20e1f99098f4f15002593
+	fmt.Printf("tx sent: %s", signedTx.Hash().Hex())
+}

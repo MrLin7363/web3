@@ -1,0 +1,27 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+	client, err := ethclient.Dial("https://sepolia.infura.io/v3/xxxx")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// 测试网的交易 https://sepolia.etherscan.io/address/0x4599E99bD35FAaDd93b9Cac9E0A36E3B2Ad4272e
+	// 直接获取某个交易的信息，根据事务哈希
+	txHash := common.HexToHash("0xd891f47bb6148970a11b593d5e4d03b28f457021f19fb025b5fdf17d7f31b371")
+	tx, isPending, err := client.TransactionByHash(context.Background(), txHash)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(tx.Hash().Hex()) // 0xd891f47bb6148970a11b593d5e4d03b28f457021f19fb025b5fdf17d7f31b371
+	fmt.Println(isPending)       // false
+}

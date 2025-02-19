@@ -1,0 +1,12 @@
+package main
+
+
+func main() {
+
+
+	key := [32]byte{}
+	value := [32]byte{}
+	copy(key[:], []byte("foo"))
+	copy(value[:], []byte("bar"))
+    
+}
